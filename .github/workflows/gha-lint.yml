@@ -1,0 +1,41 @@
+name: GitHub Actions lint
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/jactionlint@v2.6.0
+        with:
+          profile: correctness
+
+      - name: Run ghalint
+        run: |
+          archive="$RUNNER_TEMP/ghalint_1.6.0_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            --output "$archive" \
+            https://github.com/suzuki-shunsuke/ghalint/releases/download/v1.6.0/ghalint_1.6.0_linux_amd64.tar.gz
+          printf '%s  %s\n' 'eda1af79c1a4a31c2de5831cd1333ad582fa6fa72015f8e9c1c4525d550c1d35' "$archive" |
+            sha256sum --check
+          tar --extract --gzip --file "$archive" --directory "$RUNNER_TEMP" ghalint
+          "$RUNNER_TEMP/ghalint" run
+
+      - uses: zizmorcore/zizmor-action@v0.9.2
+        with:
+          version: v1.32.0
+          advanced-security: false
+          annotations: true

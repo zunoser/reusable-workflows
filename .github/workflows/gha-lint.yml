@@ -40,7 +40,10 @@ jobs:
 
       # Workflows onboarded to actions.lock keep tag refs, which pinact v5 would
       # flag. Check only what the lockfile does not pin: reusable workflow calls
-      # and action definitions. Without a lockfile, every ref needs a SHA pin.
+      # and action definitions outside .github/actions/. gh actions-lock --verify
+      # rejects local actions called as ./, so those under .github/actions/ run
+      # as $/ and the lockfile pins their refs as tags. Without a lockfile, every
+      # ref needs a SHA pin.
       - name: Check SHA pins with pinact
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -59,7 +62,8 @@ jobs:
             exit 0
           fi
           "$pinact" run --check --verify-comment --include '.*/\.github/workflows/.*'
-          mapfile -t actions < <(git ls-files -- 'action.yml' 'action.yaml' '**/action.yml' '**/action.yaml')
+          mapfile -t actions < <(git ls-files -- 'action.yml' 'action.yaml' '**/action.yml' '**/action.yaml' |
+            grep -v '^\.github/actions/' || true)
           if [ "${#actions[@]}" -gt 0 ]; then
             "$pinact" run --check --verify-comment "${actions[@]}"
           fi

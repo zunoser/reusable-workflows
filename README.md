@@ -2,13 +2,16 @@
 
 ## GitHub Actions lint
 
-Run `gh actions-lock --verify`, jactionlint, ghalint, and zizmor on the caller's
-workflow files. The job requires `contents: read` and can run on pull requests
+Run `gh actions-lock --verify`, pinact, jactionlint, ghalint, and zizmor on the
+caller's workflow files. The job requires `contents: read` and can run on pull requests
 without repository secrets.
 
 `gh actions-lock --verify` fails when `.github/workflows/actions.lock` is missing or
 does not cover every workflow, including `schedule` and `workflow_dispatch` workflows
-that the pull request does not run. Callers without a lockfile can skip it:
+that the pull request does not run. pinact then checks the refs the lockfile does
+not pin: reusable workflow calls and action definitions (`action.yml`) need full
+commit SHAs. Callers without a lockfile can skip the lockfile check; pinact then
+requires a SHA pin on every ref:
 
 ```yaml
     with:
@@ -26,7 +29,7 @@ jobs:
   gha-lint:
     permissions:
       contents: read
-    uses: zunoser/reusable-workflows/.github/workflows/gha-lint.yml@RELEASE_COMMIT_SHA # v1.1.0
+    uses: zunoser/reusable-workflows/.github/workflows/gha-lint.yml@RELEASE_COMMIT_SHA # v1.2.0
 ```
 
 Replace `RELEASE_COMMIT_SHA` with a full commit SHA from the

@@ -9,8 +9,9 @@ without repository secrets.
 `gh actions-lock --verify` fails when `.github/workflows/actions.lock` is missing or
 does not cover every workflow, including `schedule` and `workflow_dispatch` workflows
 that the pull request does not run. pinact then checks the refs the lockfile does
-not pin: reusable workflow calls and action definitions (`action.yml`) need full
-commit SHAs. Callers without a lockfile can skip the lockfile check; pinact then
+not pin: reusable workflow calls and action definitions (`action.yml`) outside
+`.github/actions/` need full commit SHAs. Actions under `.github/actions/` run as
+`$/` and the lockfile pins their refs. Callers without a lockfile can skip the lockfile check; pinact then
 requires a SHA pin on every ref:
 
 ```yaml
@@ -29,7 +30,7 @@ jobs:
   gha-lint:
     permissions:
       contents: read
-    uses: zunoser/reusable-workflows/.github/workflows/gha-lint.yml@RELEASE_COMMIT_SHA # v1.2.0
+    uses: zunoser/reusable-workflows/.github/workflows/gha-lint.yml@RELEASE_COMMIT_SHA # v1.3.0
 ```
 
 Replace `RELEASE_COMMIT_SHA` with a full commit SHA from the

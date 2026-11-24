@@ -38,6 +38,32 @@ jobs:
           chmod +x "$bin"
           "$bin" --verify
 
+      # Workflows onboarded to actions.lock keep tag refs, which pinact v5 would
+      # flag. Check only what the lockfile does not pin: reusable workflow calls
+      # and action definitions. Without a lockfile, every ref needs a SHA pin.
+      - name: Check SHA pins with pinact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          LOCKED: ${{ inputs.verify-actions-lock }}
+        run: |
+          archive="$RUNNER_TEMP/pinact_linux_amd64.tar.gz"
+          curl --fail --location --silent --show-error \
+            --output "$archive" \
+            https://github.com/suzuki-shunsuke/pinact/releases/download/v5.0.2/pinact_linux_amd64.tar.gz
+          printf '%s  %s\n' '7f003d8f51e984c2264d2009d430e3e0e87ae404a0e2dc2a9a277b0f731bf5b7' "$archive" |
+            sha256sum --check
+          tar --extract --gzip --file "$archive" --directory "$RUNNER_TEMP" pinact
+          pinact="$RUNNER_TEMP/pinact"
+          if [ "$LOCKED" != true ]; then
+            "$pinact" run --check --verify-comment
+            exit 0
+          fi
+          "$pinact" run --check --verify-comment --include '.*/\.github/workflows/.*'
+          mapfile -t actions < <(git ls-files -- 'action.yml' 'action.yaml' '**/action.yml' '**/action.yaml')
+          if [ "${#actions[@]}" -gt 0 ]; then
+            "$pinact" run --check --verify-comment "${actions[@]}"
+          fi
+
       - uses: jdx/jactionlint@v2.6.0
         with:
           profile: correctness
